@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased (major)
+
+ - Rename `UniformBlock::binding` to `id` and add `initial_binding`.
+
 ## Unreleased
 
  - Add `is_color_renderable` to the color image formats.
