@@ -312,7 +312,7 @@ fn build_texture<W: Write>(mut dest: &mut W, ty: TextureType, dimensions: Textur
             use texture::get_format::{{InternalFormat, InternalFormatType, GetFormatError}};
             use texture::pixel_buffer::PixelBuffer;
             use texture::{{TextureCreationError, Texture1dDataSource, Texture2dDataSource}};
-            use texture::{{Texture3dDataSource, Texture2dDataSink, MipmapsOption, CompressedMipmapsOption, Texture}};
+            use texture::{{Texture3dDataSource, Texture2dDataSink, MipmapsOption, CompressedMipmapsOption}};
             use texture::{{RawImage1d, RawImage2d, RawImage3d, CubeLayer}};
 
             use image_format::{{ClientFormatAny, TextureFormatRequest}};
@@ -373,31 +373,6 @@ fn build_texture<W: Write>(mut dest: &mut W, ty: TextureType, dimensions: Textur
     })).unwrap();
     (writeln!(dest, ".")).unwrap();
     (writeln!(dest, "pub struct {}(TextureAny);", name)).unwrap();
-
-    // `Texture` trait impl
-    (writeln!(dest, "
-                impl Texture for {} {{
-                    #[inline]
-                    fn get_width(&self) -> u32 {{
-                        self.0.get_width()
-                    }}
-
-                    #[inline]
-                    fn get_height(&self) -> Option<u32> {{
-                        self.0.get_height()
-                    }}
-
-                    #[inline]
-                    fn get_depth(&self) -> Option<u32> {{
-                        self.0.get_depth()
-                    }}
-
-                    #[inline]
-                    fn get_array_size(&self) -> Option<u32> {{
-                        self.0.get_array_size()
-                    }}
-                }}
-            ", name)).unwrap();
 
     // `GlObject` trait impl
     (writeln!(dest, "
@@ -848,7 +823,7 @@ fn build_texture<W: Write>(mut dest: &mut W, ty: TextureType, dimensions: Textur
     // writing the `read` functions
     // TODO: implement for other types too
     if dimensions == TextureDimensions::Texture2d &&
-       (ty == TextureType::Regular || is_compressed)
+       (ty == TextureType::Regular || ty == TextureType::Srgb || is_compressed)
     {
         (write!(dest, r#"
                 /// Reads the content of the texture to RAM.
@@ -904,7 +879,7 @@ fn build_texture<W: Write>(mut dest: &mut W, ty: TextureType, dimensions: Textur
     // writing the `write` function
     // TODO: implement for other types too
     if dimensions == TextureDimensions::Texture2d &&
-            (ty == TextureType::Regular || is_compressed)
+            (ty == TextureType::Regular || ty == TextureType::Srgb || is_compressed)
     {
         let compressed_restrictions = if is_compressed {
             r#" ///
@@ -1099,7 +1074,7 @@ fn build_texture<W: Write>(mut dest: &mut W, ty: TextureType, dimensions: Textur
         // writing the `write` function for mipmaps.
         // TODO: implement for other types too
         if dimensions == TextureDimensions::Texture2d &&
-                (ty == TextureType::Regular || is_compressed)
+                (ty == TextureType::Regular || ty == TextureType::Srgb || is_compressed)
         {
             let compressed_restrictions = if is_compressed {
                 r#" ///

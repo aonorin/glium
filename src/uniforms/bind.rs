@@ -125,10 +125,10 @@ fn bind_uniform_block<'a, P>(ctxt: &mut context::CommandContext, value: &Uniform
 
             assert!(buffer.get_offset_bytes() == 0);     // TODO: not implemented
             let fence = buffer.add_fence();
-            let binding = block.binding as gl::types::GLuint;
+            let block_id = block.id as gl::types::GLuint;
 
             buffer.prepare_and_bind_for_uniform(ctxt, bind_point as gl::types::GLuint);
-            program.set_uniform_block_binding(ctxt, binding, bind_point as gl::types::GLuint);
+            program.set_uniform_block_binding(ctxt, block_id, bind_point as gl::types::GLuint);
 
             Ok(fence)
         },
@@ -161,10 +161,10 @@ fn bind_shared_storage_block<'a, P>(ctxt: &mut context::CommandContext, value: &
 
             assert!(buffer.get_offset_bytes() == 0);     // TODO: not implemented
             let fence = buffer.add_fence();
-            let binding = block.binding as gl::types::GLuint;
+            let block_id = block.id as gl::types::GLuint;
 
             buffer.prepare_and_bind_for_shared_storage(ctxt, bind_point as gl::types::GLuint);
-            program.set_shader_storage_block_binding(ctxt, binding, bind_point as gl::types::GLuint);
+            program.set_shader_storage_block_binding(ctxt, block_id, bind_point as gl::types::GLuint);
 
             Ok(fence)
         },
@@ -555,7 +555,7 @@ fn bind_texture_uniform<P, T>(mut ctxt: &mut context::CommandContext,
 
     // updating the state of the texture unit
     if ctxt.state.texture_units.len() <= texture_unit as usize {
-        for _ in (ctxt.state.texture_units.len() .. texture_unit as usize + 1) {
+        for _ in ctxt.state.texture_units.len() .. texture_unit as usize + 1 {
             ctxt.state.texture_units.push(Default::default());
         }
     }

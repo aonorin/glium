@@ -1,6 +1,6 @@
 [package]
 name = "glium"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["Pierre Krieger <pierre.krieger1708@gmail.com>"]
 description = """
 Elegant and safe OpenGL wrapper.
@@ -24,18 +24,19 @@ exclude = ["doc", ".travis.yml", "circle.yml"]
 
 [features]
 default = ["glutin", "image", "nalgebra", "cgmath"]
+unstable = []       # used for benchmarks
 
 [dependencies.glutin]
-version = "0.3"
-features = ["window"]
+version = "0.4"
+features = []
 optional = true
 
 [dependencies.cgmath]
-version = "0.2.0"
+version = "0.3"
 optional = true
 
 [dependencies.nalgebra]
-version = "0.2.14"
+version = "0.3"
 optional = true
 
 [dependencies.image]
@@ -54,7 +55,7 @@ gl_generator = "0.1.0"
 khronos_api = "0.0.8"
 
 [dev-dependencies]
-clock_ticks = "0.0.5"
+clock_ticks = "0.0.6"
 genmesh = "0.2.1"
 obj = "0.2.1"
 rand = "0.3"

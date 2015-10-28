@@ -1,7 +1,7 @@
 use std::fmt;
 use std::mem;
 use std::borrow::Cow;
-use std::ops::Range;
+use utils::range::RangeArgument;
 use std::marker::PhantomData;
 
 use texture::{PixelValue, Texture1dDataSink};
@@ -116,7 +116,8 @@ impl<T: ?Sized> Buffer<T> where T: Content {
     /// You should call this if you only use parts of a buffer. For example if you want to use
     /// the first half of the buffer, you invalidate the whole buffer then write the first half.
     ///
-    /// This operation is a no-op if the backend doesn't support it.
+    /// This operation is a no-op if the backend doesn't support it and for persistent-mapped
+    /// buffers.
     ///
     /// # Implementation
     ///
@@ -355,7 +356,7 @@ impl<T> Buffer<[T]> where [T]: Content, T: Copy {
     /// This method builds an object that represents a slice of the buffer. No actual operation
     /// OpenGL is performed.
     #[inline]
-    pub fn slice(&self, range: Range<usize>) -> Option<BufferSlice<[T]>> {
+    pub fn slice<R: RangeArgument<usize>>(&self, range: R) -> Option<BufferSlice<[T]>> {
         self.as_slice().slice(range)
     }
 
@@ -364,7 +365,7 @@ impl<T> Buffer<[T]> where [T]: Content, T: Copy {
     /// This method builds an object that represents a slice of the buffer. No actual operation
     /// OpenGL is performed.
     #[inline]
-    pub fn slice_mut(&mut self, range: Range<usize>) -> Option<BufferMutSlice<[T]>> {
+    pub fn slice_mut<R: RangeArgument<usize>>(&mut self, range: R) -> Option<BufferMutSlice<[T]>> {
         self.as_mut_slice().slice(range)
     }
 }
@@ -534,7 +535,8 @@ impl<'a, T: ?Sized> BufferSlice<'a, T> where T: Content + 'a {
 
     /// Invalidates the content of the slice. The data becomes undefined.
     ///
-    /// This operation is a no-op if the backend doesn't support it.
+    /// This operation is a no-op if the backend doesn't support it and for persistent-mapped
+    /// buffers.
     ///
     /// # Implementation
     ///
@@ -656,15 +658,15 @@ impl<'a, T> BufferSlice<'a, [T]> where [T]: Content + 'a {
     /// This method builds an object that represents a slice of the buffer. No actual operation
     /// OpenGL is performed.
     #[inline]
-    pub fn slice(&self, range: Range<usize>) -> Option<BufferSlice<'a, [T]>> {
-        if range.start > self.len() || range.end > self.len() {
+    pub fn slice<R: RangeArgument<usize>>(&self, range: R) -> Option<BufferSlice<'a, [T]>> {
+        if range.start().map_or(0, |e| *e) > self.len() || range.end().map_or(0, |e| *e) > self.len() {
             return None;
         }
 
         Some(BufferSlice {
             alloc: self.alloc,
-            bytes_start: self.bytes_start + range.start * mem::size_of::<T>(),
-            bytes_end: self.bytes_start + range.end * mem::size_of::<T>(),
+            bytes_start: self.bytes_start + range.start().map_or(0, |e| *e) * mem::size_of::<T>(),
+            bytes_end: self.bytes_start + range.end().map_or(self.len(), |e| *e) * mem::size_of::<T>(),
             fence: self.fence,
             marker: PhantomData,
         })
@@ -897,7 +899,8 @@ impl<'a, T: ?Sized> BufferMutSlice<'a, T> where T: Content + 'a {
 
     /// Invalidates the content of the slice. The data becomes undefined.
     ///
-    /// This operation is a no-op if the backend doesn't support it.
+    /// This operation is a no-op if the backend doesn't support it and for persistent-mapped
+    /// buffers.
     ///
     /// # Implementation
     ///
@@ -1017,15 +1020,16 @@ impl<'a, T> BufferMutSlice<'a, [T]> where [T]: Content, T: Copy + 'a {
     /// This method builds an object that represents a slice of the buffer. No actual operation
     /// OpenGL is performed.
     #[inline]
-    pub fn slice(self, range: Range<usize>) -> Option<BufferMutSlice<'a, [T]>> {
-        if range.start > self.len() || range.end > self.len() {
+    pub fn slice<R: RangeArgument<usize>>(self, range: R) -> Option<BufferMutSlice<'a, [T]>> {
+        if range.start().map_or(0, |e| *e) > self.len() || range.end().map_or(0, |e| *e) > self.len() {
             return None;
         }
 
+        let len = self.len();
         Some(BufferMutSlice {
             alloc: self.alloc,
-            bytes_start: self.bytes_start + range.start * mem::size_of::<T>(),
-            bytes_end: self.bytes_start + range.end * mem::size_of::<T>(),
+            bytes_start: self.bytes_start + range.start().map_or(0, |e| *e) * mem::size_of::<T>(),
+            bytes_end: self.bytes_start + range.end().map_or(len, |e| *e) * mem::size_of::<T>(),
             fence: self.fence,
             marker: PhantomData,
         })
@@ -1117,7 +1121,8 @@ impl BufferAny {
 
     /// Invalidates the content of the buffer. The data becomes undefined.
     ///
-    /// This operation is a no-op if the backend doesn't support it.
+    /// This operation is a no-op if the backend doesn't support it and for persistent-mapped
+    /// buffers.
     #[inline]
     pub fn invalidate(&self) {
         self.alloc.invalidate(0, self.size);
@@ -1283,7 +1288,8 @@ impl<'a> BufferAnySlice<'a> {
 
     /// Invalidates the content of the slice. The data becomes undefined.
     ///
-    /// This operation is a no-op if the backend doesn't support it.
+    /// This operation is a no-op if the backend doesn't support it and for persistent-mapped
+    /// buffers.
     #[inline]
     pub fn invalidate(&self) {
         self.alloc.invalidate(self.bytes_start, self.get_size());

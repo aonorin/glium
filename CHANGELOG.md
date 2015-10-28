@@ -2,8 +2,29 @@
 
 ## Unreleased
 
+ - Improved performance of stencil-related state changes.
+ - Fixed `glBufferData` being called to invalidate a buffer created with `glBufferStorage`.
+ - Changed use of `Range` in buffer slice to `RangeArgument`.
+
+## Version 0.10.0 (2015-10-14)
+
+ - Update glutin to 0.4, cgmath to 0.3 and nalgebra to 0.3.
+ - Add the possibility to set the behavior of the debug callback in `Context::new`.
+ - Add `build_glium_debug` and `build_glium_unchecked_debug` to set the behavior of the debug callback at initialization.
+ - Rename `ClockWise` to `Clockwise`.
+ - The `program!` macro now returns a `ProgramChooserCreationError` and no longer panics if no version is found.
+ - Remove the `Texture` trait. All of its methods are already implemented on all texture types already.
+ - Rename `UniformBlock::binding` to `id` and add `initial_binding`.
+
+## Version 0.9.3 (2015-10-13)
+
+ - Fixed an invalid enum error during initialization.
+
+## Version 0.9.2 (2015-10-11)
+
  - Add `is_color_renderable` to the color image formats.
  - Fixed glium erroneously using a SSBO's and a uniform buffer's binding point instead of index.
+ - Fixed `glInvalidateBuffer(Sub)Data` being called for persistent-mapped buffers.
 
 ## Version 0.9.1 (2015-09-30)
 

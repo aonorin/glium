@@ -36,7 +36,12 @@ pub struct UniformBlock {
     /// Indentifier of the block.
     ///
     /// This is internal information, you probably don't need to use it.
-    pub binding: i32,
+    pub id: i32,
+
+    /// Initial bind point of the block.
+    ///
+    /// This is internal information, you probably don't need to use it.
+    pub initial_binding: i32,
 
     /// Size in bytes of the data in the block.
     pub size: usize,
@@ -191,7 +196,7 @@ pub unsafe fn reflect_uniforms(ctxt: &mut CommandContext, program: Handle)
     // the result of this function
     let mut uniforms = HashMap::with_capacity(active_uniforms as usize);
 
-    for uniform_id in (0 .. active_uniforms) {
+    for uniform_id in 0 .. active_uniforms {
         let mut uniform_name_tmp: Vec<u8> = Vec::with_capacity(64);
         let mut uniform_name_tmp_len = 63;
 
@@ -270,7 +275,7 @@ pub unsafe fn reflect_attributes(ctxt: &mut CommandContext, program: Handle)
     // the result of this function
     let mut attributes = HashMap::with_capacity(active_attributes as usize);
 
-    for attribute_id in (0 .. active_attributes) {
+    for attribute_id in 0 .. active_attributes {
         let mut attr_name_tmp: Vec<u8> = Vec::with_capacity(64);
         let mut attr_name_tmp_len = 63;
 
@@ -357,7 +362,7 @@ pub unsafe fn reflect_uniform_blocks(ctxt: &mut CommandContext, program: Handle)
 
     let mut blocks = HashMap::with_capacity(active_blocks as usize);
 
-    for block_id in (0 .. active_blocks) {
+    for block_id in 0 .. active_blocks {
         // getting the name of the block
         let name = {
             let mut name_tmp: Vec<u8> = Vec::with_capacity(1 + active_blocks_max_name_len
@@ -372,9 +377,9 @@ pub unsafe fn reflect_uniform_blocks(ctxt: &mut CommandContext, program: Handle)
         };
 
         // binding point for this block
-        /*let mut binding: gl::types::GLint = mem::uninitialized();
+        let mut binding: gl::types::GLint = mem::uninitialized();
         ctxt.gl.GetActiveUniformBlockiv(program, block_id as gl::types::GLuint,
-                                        gl::UNIFORM_BLOCK_BINDING, &mut binding);*/
+                                        gl::UNIFORM_BLOCK_BINDING, &mut binding);
 
         // number of bytes
         let mut block_size: gl::types::GLint = mem::uninitialized();
@@ -439,7 +444,8 @@ pub unsafe fn reflect_uniform_blocks(ctxt: &mut CommandContext, program: Handle)
 
         // finally inserting into the blocks list
         blocks.insert(name, UniformBlock {
-            binding: block_id as i32,
+            id: block_id as i32,
+            initial_binding: binding as i32,
             size: block_size as usize,
             layout: introspection_output_to_layout(members),
         });
@@ -511,7 +517,7 @@ pub unsafe fn reflect_transform_feedback(ctxt: &mut CommandContext, program: Han
 
     let mut result = Vec::with_capacity(num_varyings as usize);
 
-    for index in (0 .. num_varyings as gl::types::GLuint) {
+    for index in 0 .. num_varyings as gl::types::GLuint {
         let mut name_tmp: Vec<u8> = Vec::with_capacity(max_buffer_len as usize);
         let mut name_tmp_len = max_buffer_len;
 
@@ -650,7 +656,7 @@ pub unsafe fn reflect_shader_storage_blocks(ctxt: &mut CommandContext, program: 
         // not supported
         return HashMap::with_capacity(0);
     }
-    
+
     let program = match program {
         Handle::Id(program) => program,
         Handle::Handle(program) => return HashMap::with_capacity(0)
@@ -667,15 +673,15 @@ pub unsafe fn reflect_shader_storage_blocks(ctxt: &mut CommandContext, program: 
     // the result of this function
     let mut blocks = HashMap::with_capacity(active_blocks as usize);
 
-    for block_id in (0 .. active_blocks) {
+    for block_id in 0 .. active_blocks {
         // getting basic infos
-        let (name_len, num_variables, total_size) = {
-            let mut output: [gl::types::GLint; 3] = mem::uninitialized();
-            ctxt.gl.GetProgramResourceiv(program, gl::SHADER_STORAGE_BLOCK, block_id, 3,
+        let (name_len, num_variables, binding, total_size) = {
+            let mut output: [gl::types::GLint; 4] = mem::uninitialized();
+            ctxt.gl.GetProgramResourceiv(program, gl::SHADER_STORAGE_BLOCK, block_id, 4,
                                          [gl::NAME_LENGTH, gl::NUM_ACTIVE_VARIABLES,
-                                          gl::BUFFER_DATA_SIZE].as_ptr(), 3,
+                                          gl::BUFFER_BINDING, gl::BUFFER_DATA_SIZE].as_ptr(), 4,
                                          ptr::null_mut(), output.as_mut_ptr() as *mut _);
-            (output[0] as usize, output[1] as usize, output[2] as usize)
+            (output[0] as usize, output[1] as usize, output[2], output[3] as usize)
         };
 
         // getting the name of the block
@@ -732,7 +738,8 @@ pub unsafe fn reflect_shader_storage_blocks(ctxt: &mut CommandContext, program: 
 
         // finally inserting into the blocks list
         blocks.insert(name, UniformBlock {
-            binding: block_id as i32,
+            id: block_id as i32,
+            initial_binding: binding as i32,
             size: total_size,
             layout: introspection_output_to_layout(members),
         });
